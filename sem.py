@@ -583,17 +583,18 @@ class Sem:
     def HVGetVoltage(self):
         return self.connection.RecvFloat('HVGetVoltage')
 
-    def HVSetIndex(self, index, async = -1):
-        if async == -1:
+    # change variable name from async to p_async
+    def HVSetIndex(self, index, p_async = -1):
+        if p_async == -1:
             self.connection.Send('HVSetIndex', self._CInt(index))
         else:
-            self.connection.Send('HVSetIndex', self._CInt(index), self._CInt(async))
+            self.connection.Send('HVSetIndex', self._CInt(index), self._CInt(p_async))
 
-    def HVSetVoltage(self, voltage, async = -1):
-        if async == -1:
+    def HVSetVoltage(self, voltage, p_async = -1):
+        if p_async == -1:
             self.connection.Send('HVSetVoltage', self._CFloat(voltage))
         else:
-            self.connection.Send('HVSetVoltage', self._CFloat(voltage), self._CInt(async))
+            self.connection.Send('HVSetVoltage', self._CFloat(voltage), self._CInt(p_async))
 
 
 ################################################################################
