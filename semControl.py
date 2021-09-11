@@ -10,6 +10,8 @@ from pynput.mouse import Controller as MouseController
 from pynput.keyboard import Key 
 from pynput.keyboard import Controller as KeyboardController
 import win32gui
+import subprocess
+import time
 
 
 class SemControl(Sem):
@@ -42,6 +44,8 @@ class SemControl(Sem):
     image_resolution = 4096
     sample_name = ''
     folder_name = ''
+    external_exe_name = 'D:\\p\\c++\\External_Scan_Insitu_Test\\build\\ExternalScan.exe'
+
     # these should be defined in the app
     image_adjust_option = ''
     image_capture_option = ''
@@ -279,7 +283,6 @@ class SemControl(Sem):
             bottom = self.image_resolution- 1
             frameid = 0
 
-            print('Imaging ...')
             self.ScStopScan()
             self.SetWaitFlags(self.wtflgB)
             self.ScScanXY(frameid, width, height, left, top, right, bottom, self.single_frame_TF, self.dwell_ns)
@@ -293,6 +296,27 @@ class SemControl(Sem):
             if os.path.exists(fp):
                 fp = fp.split('.tiff')[0] + '_A.tiff'
             img.save(fp)
+
+        elif self.image_capture_option.get() == 'external':
+            width = self.image_resolution
+            height = self.image_resolution
+            dwell_us = self.dwell_ns/1000  # the external scan needs dwell input as micro-seconds
+
+            print('Imaging ...')
+            # Call externalscan.exe, compiled from cpp, to run external scan controller for imaging
+            args = self.external_exe_name + " -w " + str(width) + " -h " + str(height) + " -s " + str(dwell_us) + " -o " + self.folder_name + '\\'+ self.sample_name + '_r' + str(self.iR) + 'c' + str(self.iC) + '.tiff'
+            
+            success = 0
+            while(not success):
+                try:                     
+                    subprocess.run(args, check=True)
+                    success = 1
+                    print('\n finished imaging')
+                except subprocess.CalledProcessError:
+                    success = 0
+                    time.sleep(1)
+                    print('\n error, will retry ')
+
         elif self.image_capture_option.get() == 'built-in':
             self.make_window_front('MiraTC')
             
@@ -368,7 +392,7 @@ class SemControl(Sem):
         # Image adjust option
         Label(self.app, text = "Image adjust option").grid(row = 7, column = 0, padx = 5, pady = 5, sticky = 'E')
         self.image_adjust_option = StringVar(self.app)
-        self.image_adjust_option.set('auto')
+        self.image_adjust_option.set('interp')
         self.image_adjust_option_menu = OptionMenu(self.app, self.image_adjust_option, 'auto', 'interp', 'manual')
         self.image_adjust_option_menu.grid(row = 7, column = 1, columnspan = 2, ipadx = 15, pady = 5, sticky = 'W')
         
@@ -376,7 +400,7 @@ class SemControl(Sem):
         Label(self.app, text = "Image capture option").grid(row = 7, column = 5, padx = 5, pady = 5, sticky = 'E')
         self.image_capture_option = StringVar(self.app)
         self.image_capture_option.set('auto')
-        self.image_capture_option_menu = OptionMenu(self.app, self.image_capture_option, 'auto', 'built-in', 'manual')
+        self.image_capture_option_menu = OptionMenu(self.app, self.image_capture_option, 'auto', 'built-in', 'manual', 'external')
         self.image_capture_option_menu.grid(row = 7, column = 6, columnspan = 2, ipadx = 15, pady = 5, sticky = 'W')
         
         name_label = Label(self.app, text = "Image name prefix = ")
@@ -391,10 +415,16 @@ class SemControl(Sem):
         self.folder_name_input.grid(row = 12, column = 1, columnspan = 9, padx = 5, pady = 5, sticky = 'W')
         self.folder_name_input.insert(0, os.getcwd())
         
+        external_exe_name_button = Button(self.app, text = "Select ExternalScan exe", command = self.click_for_external_exe_name)
+        external_exe_name_button.grid(row = 13, column = 0, ipadx = 3, pady = 5, sticky = 'E')
+        self.external_exe_name_input = Entry(self.app, width = 75, borderwidth = 5)
+        self.external_exe_name_input.grid(row = 13, column = 1, columnspan = 9, padx = 5, pady = 5, sticky = 'W')
+        self.external_exe_name_input.insert(0, self.external_exe_name)
+
         # 4 corner positions 
         # frame-1: upper left
         frame_1 = Frame(self.app, bd = 5, relief = "groove")
-        frame_1.grid(row = 13, column = 0, columnspan = 5, padx = 5, pady = 5)
+        frame_1.grid(row = 14, column = 0, columnspan = 5, padx = 5, pady = 5)
         
         Label(frame_1, text = "Upper left").grid(row = 0, column = 0, padx = 5, pady = 5)
         Label(frame_1, text = "X = ").grid(row = 0, column = 1)
@@ -412,7 +442,7 @@ class SemControl(Sem):
         
         # frame-2: upper right
         frame_2 = Frame(self.app, bd = 5, relief = "groove")
-        frame_2.grid(row = 13, column = 5, columnspan = 5, padx = 5, pady = 5)
+        frame_2.grid(row = 14, column = 5, columnspan = 5, padx = 5, pady = 5)
         
         Label(frame_2, text = "Upper right").grid(row = 0, column = 0, padx = 5, pady = 5)
         Label(frame_2, text = "X = ").grid(row = 0, column = 1)
@@ -430,7 +460,7 @@ class SemControl(Sem):
     
         # frame-3: lower left
         frame_3 = Frame(self.app, bd = 5, relief = "groove")
-        frame_3.grid(row = 14, column = 0, columnspan = 5, padx = 5, pady = 5)
+        frame_3.grid(row = 15, column = 0, columnspan = 5, padx = 5, pady = 5)
         
         Label(frame_3, text = "Lower left").grid(row = 0, column = 0, padx = 5, pady = 5)
         Label(frame_3, text = "X = ").grid(row = 0, column = 1)
@@ -448,7 +478,7 @@ class SemControl(Sem):
         
         # frame-4: lower right
         frame_4 = Frame(self.app, bd = 5, relief = "groove")
-        frame_4.grid(row = 14, column = 5, columnspan = 5, padx = 5, pady = 5)
+        frame_4.grid(row = 15, column = 5, columnspan = 5, padx = 5, pady = 5)
         
         Label(frame_4, text = "Lower right").grid(row = 0, column = 0, padx = 5, pady = 5)
         Label(frame_4, text = "X = ").grid(row = 0, column = 1)
@@ -514,15 +544,15 @@ class SemControl(Sem):
         
         # start multi-tile imaging
         start_button = Button(self.app, text = "Start multi-tile imaging", command = self.start_imaging, bd = 5)
-        start_button.grid(row = 15, column = 0, columnspan = 2, ipadx = 2, ipady = 20, pady = 10)
+        start_button.grid(row = 16, column = 0, columnspan = 2, ipadx = 2, ipady = 20, pady = 10)
         
         # take calibration pairs
         calibration_button = Button(self.app, text = "Start calibration pairs", command = self.start_calibration, bd = 5)
-        calibration_button.grid(row = 15, column = 3, columnspan = 3, ipadx = 5, ipady = 20, pady = 10)
+        calibration_button.grid(row = 16, column = 3, columnspan = 3, ipadx = 5, ipady = 20, pady = 10)
         
         # start
         stop_button = Button(self.app, text = "Stop", command = self.stop_app, bd = 5)
-        stop_button.grid(row = 15, column = 6, columnspan = 4, ipadx = 30, ipady = 20, pady = 10)
+        stop_button.grid(row = 16, column = 6, columnspan = 4, ipadx = 30, ipady = 20, pady = 10)
     
     # click button to get folder name
     def click_for_folder_name(self):
@@ -530,6 +560,12 @@ class SemControl(Sem):
         self.folder_name_input.delete(0, END)
         self.folder_name_input.insert(0, self.folder_name)
         
+    # click button to get exe name
+    def click_for_external_exe_name(self):
+        self.external_exe_name = filedialog.askopenfilename()
+        self.external_exe_name_input.delete(0, END)
+        self.external_exe_name_input.insert(0, self.external_exe_name)
+
     # click a button in the App to update SEM parameter indications, based on readout from SEM    
     def click_to_update(self):
         # update inputs
@@ -545,7 +581,7 @@ class SemControl(Sem):
         self.image_capture_option
         self.sample_name = self.sample_name_input.get()
         self.folder_name = self.folder_name_input.get()
-
+        self.external_exe_name = self.external_exe_name_input.get()
     
         # update read-onlys
         self.scan_speed = self.ScGetSpeed()
