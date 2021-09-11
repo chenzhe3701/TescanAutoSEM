@@ -302,6 +302,8 @@ class SemControl(Sem):
             height = self.image_resolution
             dwell_us = self.dwell_ns/1000  # the external scan needs dwell input as micro-seconds
 
+            self.ScSetExternal(1)
+
             print('Imaging ...')
             # Call externalscan.exe, compiled from cpp, to run external scan controller for imaging
             args = self.external_exe_name + " -w " + str(width) + " -h " + str(height) + " -s " + str(dwell_us) + " -o " + self.folder_name + '\\'+ self.sample_name + '_r' + str(self.iR) + 'c' + str(self.iC) + '.tiff'
@@ -316,6 +318,8 @@ class SemControl(Sem):
                     success = 0
                     time.sleep(1)
                     print('\n error, will retry ')
+            
+            self.ScSetExternal(0)
 
         elif self.image_capture_option.get() == 'built-in':
             self.make_window_front('MiraTC')
