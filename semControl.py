@@ -684,6 +684,7 @@ class SemControl(Sem):
             continueTF = self.update_next_iRiC()
 
         self.move_to_iRiC()   
+        self.HVBeamOff()
     
     # calibration
     def start_calibration(self):
